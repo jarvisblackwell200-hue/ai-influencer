@@ -13,11 +13,31 @@ services:
       - N8N_DEFAULT_BINARY_DATA_MODE=filesystem
       - GENERIC_TIMEZONE=Europe/Stockholm
       - TZ=Europe/Stockholm
+      - N8N_LOG_LEVEL=info
     volumes:
       - n8n_data:/home/node/.n8n
       - ./workflows:/home/node/workflows
     env_file:
       - credentials.env
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5678/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Optional: Cloudflare Tunnel for webhook access
+  # Uncomment to use instead of ngrok
+  # cloudflared:
+  #   image: cloudflare/cloudflared:latest
+  #   container_name: ai-influencer-tunnel
+  #   restart: unless-stopped
+  #   command: tunnel --no-autoupdate run
+  #   environment:
+  #     - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+  #   depends_on:
+  #     n8n:
+  #       condition: service_healthy
 
 volumes:
   n8n_data:
