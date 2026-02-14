@@ -1,0 +1,107 @@
+{
+  "name": "Daily Analytics & Engagement Report",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 20 * * *"
+            }
+          ]
+        }
+      },
+      "id": "cron-trigger",
+      "name": "Daily 20:00 CET Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Placeholder: Pull metrics from platform APIs\n// Replace these with actual API calls once accounts are set up\n// For now, this simulates the data structure\n\nconst today = new Date().toISOString().split('T')[0];\n\n// In production, replace with HTTP Request nodes to each platform API:\n// - Instagram Graph API: GET /{ig-user-id}/insights\n// - TikTok Research API: GET /research/user/info\n// - YouTube Data API: GET /youtube/v3/channels?part=statistics\n// - X/Twitter API: GET /2/users/{id}?user.fields=public_metrics\n\nreturn [{\n  json: {\n    date: today,\n    instagram: {\n      followers: 0,\n      followers_delta: 0,\n      posts_published: 0,\n      total_reach: 0,\n      total_impressions: 0,\n      engagement_rate: 0.0,\n      top_post: { type: 'none', reach: 0, engagement: 0, caption_preview: '' },\n      stories_views: 0,\n      reels_views: 0\n    },\n    tiktok: {\n      followers: 0,\n      followers_delta: 0,\n      videos_published: 0,\n      total_views: 0,\n      engagement_rate: 0.0,\n      top_video: { title: 'none', views: 0, engagement: 0 }\n    },\n    youtube: {\n      subscribers: 0,\n      subscribers_delta: 0,\n      shorts_views: 0,\n      watch_time_hours: 0\n    },\n    x_twitter: {\n      followers: 0,\n      followers_delta: 0,\n      impressions: 0,\n      engagement_rate: 0.0\n    }\n  }\n}];"
+      },
+      "id": "pull-metrics",
+      "name": "1. Pull Platform Metrics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 400],
+      "notes": "Replace with actual HTTP Request nodes to Instagram Graph API, TikTok API, YouTube Data API, and X API once accounts and API access are set up."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "={{ $env.ANTHROPIC_API_KEY }}" },
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "content-type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-sonnet-4-5-20250929\",\n  \"max_tokens\": 1024,\n  \"system\": \"You are a social media analytics expert for Erik Lindqvist, a Tech/AI AI influencer. Analyze daily metrics and provide actionable insights. Targets: Instagram engagement 3-5%, TikTok engagement 5-8%, follower growth 10-15% weekly in early months. Output JSON with: summary (2-3 sentences), highlights (array), concerns (array), content_suggestion (specific tomorrow's angle), experiment (one thing to test), weekly_trend (up/down/stable).\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Analyze today's metrics: {{ JSON.stringify($json) }}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "analyze",
+      "name": "2. Analyze Metrics (Claude)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse analysis and build Telegram report\nconst items = $input.all();\nconst metrics = $('1. Pull Platform Metrics').first().json;\nconst results = [];\n\nfor (const item of items) {\n  const responseText = item.json.content?.[0]?.text || '';\n  let analysis = {};\n  try {\n    const jsonMatch = responseText.match(/```json?\\n?([\\s\\S]*?)```/);\n    analysis = JSON.parse(jsonMatch ? jsonMatch[1] : responseText);\n  } catch (e) {\n    analysis = {\n      summary: responseText.substring(0, 200),\n      highlights: [],\n      concerns: [],\n      content_suggestion: 'Unable to parse analysis',\n      experiment: '',\n      weekly_trend: 'stable'\n    };\n  }\n\n  const trendEmoji = analysis.weekly_trend === 'up' ? '📈' : analysis.weekly_trend === 'down' ? '📉' : '➡️';\n\n  const totalFollowers = (metrics.instagram?.followers || 0) +\n    (metrics.tiktok?.followers || 0) +\n    (metrics.youtube?.subscribers || 0) +\n    (metrics.x_twitter?.followers || 0);\n\n  const totalDelta = (metrics.instagram?.followers_delta || 0) +\n    (metrics.tiktok?.followers_delta || 0) +\n    (metrics.youtube?.subscribers_delta || 0) +\n    (metrics.x_twitter?.followers_delta || 0);\n\n  const deltaSign = totalDelta >= 0 ? '+' : '';\n\n  const report = `📊 DAILY REPORT — ${metrics.date}\\n\\n` +\n    `${trendEmoji} Weekly trend: ${analysis.weekly_trend}\\n` +\n    `👥 Total followers: ${totalFollowers.toLocaleString()} (${deltaSign}${totalDelta})\\n\\n` +\n    `📱 IG: ${metrics.instagram?.followers || 0} (${metrics.instagram?.followers_delta >= 0 ? '+' : ''}${metrics.instagram?.followers_delta || 0}) | ` +\n    `TT: ${metrics.tiktok?.followers || 0} (${metrics.tiktok?.followers_delta >= 0 ? '+' : ''}${metrics.tiktok?.followers_delta || 0}) | ` +\n    `YT: ${metrics.youtube?.subscribers || 0} (${metrics.youtube?.subscribers_delta >= 0 ? '+' : ''}${metrics.youtube?.subscribers_delta || 0}) | ` +\n    `X: ${metrics.x_twitter?.followers || 0} (${metrics.x_twitter?.followers_delta >= 0 ? '+' : ''}${metrics.x_twitter?.followers_delta || 0})\\n\\n` +\n    `💬 Engagement: IG ${metrics.instagram?.engagement_rate || 0}% | TT ${metrics.tiktok?.engagement_rate || 0}%\\n\\n` +\n    (analysis.highlights?.length ? `✅ Highlights:\\n${analysis.highlights.map(h => `  • ${h}`).join('\\n')}\\n\\n` : '') +\n    (analysis.concerns?.length ? `⚠️ Concerns:\\n${analysis.concerns.map(c => `  • ${c}`).join('\\n')}\\n\\n` : '') +\n    `💡 Tomorrow: ${analysis.content_suggestion}\\n` +\n    (analysis.experiment ? `🧪 Experiment: ${analysis.experiment}` : '');\n\n  results.push({\n    json: {\n      report,\n      analysis,\n      metrics,\n      date: metrics.date\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "build-report",
+      "name": "3. Build Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 400]
+    },
+    {
+      "parameters": {
+        "operation": "sendMessage",
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "={{ $json.report }}"
+      },
+      "id": "telegram-report",
+      "name": "4. Send Telegram Report",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1200, 400],
+      "credentials": {
+        "telegramApi": {
+          "id": "CONFIGURE_ME",
+          "name": "Telegram API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Daily 20:00 CET Trigger": {
+      "main": [[{ "node": "1. Pull Platform Metrics", "type": "main", "index": 0 }]]
+    },
+    "1. Pull Platform Metrics": {
+      "main": [[{ "node": "2. Analyze Metrics (Claude)", "type": "main", "index": 0 }]]
+    },
+    "2. Analyze Metrics (Claude)": {
+      "main": [[{ "node": "3. Build Report", "type": "main", "index": 0 }]]
+    },
+    "3. Build Report": {
+      "main": [[{ "node": "4. Send Telegram Report", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "tags": [
+    { "name": "analytics" },
+    { "name": "daily" },
+    { "name": "reporting" }
+  ]
+}
