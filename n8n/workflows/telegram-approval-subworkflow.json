@@ -1,0 +1,205 @@
+{
+  "name": "Telegram Approval Sub-Workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "start",
+      "name": "Start",
+      "type": "n8n-nodes-base.start",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "file": "={{ $json.image_url }}",
+        "caption": "={{ '📱 NEW POST READY FOR REVIEW\\n\\n📸 Platform: ' + $json.platform + '\\n📅 Scheduled: ' + $json.scheduled_date + ' at ' + $json.scheduled_time + '\\n\\nCaption:\\n' + $json.caption + '\\n\\nHashtags:\\n' + $json.hashtags + '\\n\\nReply:\\n✅ — Approve & schedule\\n✏️ {new caption} — Edit caption\\n❌ — Reject & regenerate\\n🔄 — Regenerate image only' }}",
+        "additionalFields": {}
+      },
+      "id": "send-preview",
+      "name": "Send Preview to Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [460, 300],
+      "credentials": {
+        "telegramApi": {
+          "id": "CONFIGURE_ME",
+          "name": "Telegram API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWaitForResponse",
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "message": "Reply with your decision:",
+        "responseType": "freeText",
+        "timeout": "4h"
+      },
+      "id": "wait-response",
+      "name": "Wait for Approval",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [680, 300],
+      "credentials": {
+        "telegramApi": {
+          "id": "CONFIGURE_ME",
+          "name": "Telegram API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "rules": [
+            {
+              "value": "✅",
+              "operation": "startsWith",
+              "output": 0
+            },
+            {
+              "value": "yes",
+              "operation": "equals",
+              "output": 0
+            },
+            {
+              "value": "✏️",
+              "operation": "startsWith",
+              "output": 1
+            },
+            {
+              "value": "❌",
+              "operation": "startsWith",
+              "output": 2
+            },
+            {
+              "value": "no",
+              "operation": "equals",
+              "output": 2
+            },
+            {
+              "value": "🔄",
+              "operation": "startsWith",
+              "output": 3
+            }
+          ]
+        },
+        "fallbackOutput": "extra",
+        "dataType": "string",
+        "value1": "={{ $json.response }}"
+      },
+      "id": "route-decision",
+      "name": "Route Decision",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Output 0: Approve as-is\nconst items = $input.all();\nfor (const item of items) {\n  item.json.status = 'approved';\n  item.json.final_caption = item.json.caption;\n}\nreturn items;"
+      },
+      "id": "approve",
+      "name": "Approve",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 160]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Output 1: Edit caption then approve\nconst items = $input.all();\nfor (const item of items) {\n  const response = item.json.response || '';\n  // Extract new caption after the ✏️ emoji\n  const newCaption = response.replace(/^✏️\\s*/, '').trim();\n  item.json.status = 'approved';\n  item.json.final_caption = newCaption || item.json.caption;\n}\nreturn items;"
+      },
+      "id": "edit-caption",
+      "name": "Edit Caption",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Output 2: Reject — trigger regeneration\nconst items = $input.all();\nfor (const item of items) {\n  item.json.status = 'rejected';\n  item.json.retry_count = (item.json.retry_count || 0) + 1;\n  item.json.max_retries = 3;\n}\nreturn items;"
+      },
+      "id": "reject",
+      "name": "Reject",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 440]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Output 3: Regen image only — keep caption\nconst items = $input.all();\nfor (const item of items) {\n  item.json.status = 'regen_image';\n  item.json.final_caption = item.json.caption;\n}\nreturn items;"
+      },
+      "id": "regen-image",
+      "name": "Regenerate Image",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 580]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Timeout handler — auto-skip\nconst items = $input.all();\nfor (const item of items) {\n  item.json.status = 'skipped';\n  item.json.skip_reason = 'No response within 4 hours';\n}\nreturn items;"
+      },
+      "id": "timeout-handler",
+      "name": "Timeout — Auto Skip",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 720]
+    },
+    {
+      "parameters": {
+        "operation": "sendMessage",
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "={{ $json.status === 'approved' ? '✅ Post approved and scheduled!' : $json.status === 'skipped' ? '⏭️ Post skipped (no response within 4h)' : $json.status === 'rejected' ? '❌ Post rejected — regenerating... (attempt ' + $json.retry_count + '/' + $json.max_retries + ')' : '🔄 Regenerating image...' }}"
+      },
+      "id": "confirm",
+      "name": "Send Confirmation",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1340, 300],
+      "credentials": {
+        "telegramApi": {
+          "id": "CONFIGURE_ME",
+          "name": "Telegram API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [[{"node": "Send Preview to Telegram", "type": "main", "index": 0}]]
+    },
+    "Send Preview to Telegram": {
+      "main": [[{"node": "Wait for Approval", "type": "main", "index": 0}]]
+    },
+    "Wait for Approval": {
+      "main": [[{"node": "Route Decision", "type": "main", "index": 0}]]
+    },
+    "Route Decision": {
+      "main": [
+        [{"node": "Approve", "type": "main", "index": 0}],
+        [{"node": "Edit Caption", "type": "main", "index": 0}],
+        [{"node": "Reject", "type": "main", "index": 0}],
+        [{"node": "Regenerate Image", "type": "main", "index": 0}],
+        [{"node": "Timeout — Auto Skip", "type": "main", "index": 0}]
+      ]
+    },
+    "Approve": {
+      "main": [[{"node": "Send Confirmation", "type": "main", "index": 0}]]
+    },
+    "Edit Caption": {
+      "main": [[{"node": "Send Confirmation", "type": "main", "index": 0}]]
+    },
+    "Reject": {
+      "main": [[{"node": "Send Confirmation", "type": "main", "index": 0}]]
+    },
+    "Regenerate Image": {
+      "main": [[{"node": "Send Confirmation", "type": "main", "index": 0}]]
+    },
+    "Timeout — Auto Skip": {
+      "main": [[{"node": "Send Confirmation", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
