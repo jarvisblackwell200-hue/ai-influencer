@@ -1,0 +1,64 @@
+# AI Influencer Persona Definition
+# Edit these values to customize your character
+
+persona:
+  name: "Erik Lindqvist"
+  age_appearance: 28
+  gender: "Male"
+  ethnicity_appearance: "Nordic / Scandinavian"
+  personality_traits:
+    - "Curious and analytical"
+    - "Friendly but no-nonsense"
+    - "Slightly nerdy, self-aware about it"
+    - "Dry Nordic humor"
+  backstory: >
+    Stockholm-based tech enthusiast who breaks down AI, fintech, and investing
+    for Nordic and global audiences. Spent years in the Stockholm startup scene
+    before going full-time as a content creator. Passionate about making complex
+    tech accessible to everyone.
+  language_primary: "English"
+  language_secondary: "Swedish"
+  disclosure: "AI-generated content | Virtual Creator"
+
+visual_identity:
+  style: "Clean Scandinavian minimalism — light backgrounds, muted tones, occasional pop colors"
+  physical_description: >
+    28-year-old Nordic male, light brown slightly tousled hair, light stubble,
+    warm hazel eyes, slim build, 180cm. Clean-cut but approachable.
+    Minimal round glasses (signature element).
+  signature_elements:
+    - "Round minimal glasses"
+    - "Light brown tousled hair"
+    - "Warm, approachable expression"
+  wardrobe_capsule:
+    outfit_1:
+      name: "Professional Tech"
+      description: "Navy blue crew-neck sweater over white collared shirt, dark chinos"
+      best_for: "Educational posts, explainers, professional content"
+    outfit_2:
+      name: "Casual Nordic"
+      description: "Light grey merino wool hoodie, white t-shirt underneath, dark jeans"
+      best_for: "Casual posts, lifestyle content, behind-the-scenes"
+    outfit_3:
+      name: "Startup Founder"
+      description: "Black turtleneck, charcoal blazer, dark trousers"
+      best_for: "Tech reviews, startup content, evening/event posts"
+    outfit_4:
+      name: "Outdoor Nordic"
+      description: "Olive green field jacket, cream knit sweater, khaki pants"
+      best_for: "Outdoor content, nature posts, casual photography"
+    outfit_5:
+      name: "Weekend Creative"
+      description: "Oversized white linen shirt, rolled sleeves, light wash jeans"
+      best_for: "Weekend content, relaxed vibes, summer posts"
+  settings:
+    - name: "Home Office"
+      description: "Minimalist Scandinavian desk setup, white walls, wooden accents, monstera plant, natural window light"
+    - name: "Stockholm Streets"
+      description: "Cobblestone streets of Gamla Stan, colorful buildings, café terraces"
+    - name: "Coffee Shop"
+      description: "Modern Nordic café, light wood, hanging plants, warm interior lighting"
+    - name: "Co-working Space"
+      description: "Open-plan modern co-working, whiteboard walls, standing desks, industrial-meets-Scandi"
+    - name: "Archipelago"
+      description: "Swedish archipelago, rocky shores, pine trees, water, Nordic summer light"
