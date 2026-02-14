@@ -1,0 +1,337 @@
+{
+  "name": "Daily Content Generation & Approval",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "id": "cron-trigger",
+      "name": "Daily 09:00 CET Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "={{ $env.ANTHROPIC_API_KEY }}" },
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "content-type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-sonnet-4-5-20250929\",\n  \"max_tokens\": 2048,\n  \"system\": \"You are a content strategist for Erik Lindqvist, a Tech/AI Explainer AI influencer based in Stockholm. Generate 1 Instagram post idea. Always respond in JSON with fields: hook, caption (150-250 chars with CTA), image_prompt (detailed Flux 2 Max prompt including: 'A 28-year-old Nordic man with light brown tousled hair, light stubble, hazel eyes, minimal round glasses' + outfit + setting + 'photorealistic, natural lighting, 4K'), outfit (1-5), setting (home_office/stockholm_streets/coffee_shop/coworking/archipelago), hashtags (20-30 tags), content_pillar (educational/trend_commentary/lifestyle/engagement). Also include reel_concept with: title, hook, script_outline (15-sec), trending_angle. Use Erik's voice: curious, analytical, no-nonsense. Avoid clickbait.\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Generate today's Instagram post idea. Today is {{ $now.format('EEEE, MMMM d') }}. Content pillar for this week: {{ $json.content_pillar || 'educational' }}. Focus on trending AI/tech topics.\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "ideation",
+      "name": "1. Content Ideation (Claude)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Claude's response and extract the JSON content idea\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const responseText = item.json.content?.[0]?.text || '';\n  \n  // Extract JSON from the response (handle markdown code blocks)\n  let jsonStr = responseText;\n  const jsonMatch = responseText.match(/```json?\\n?([\\s\\S]*?)```/);\n  if (jsonMatch) {\n    jsonStr = jsonMatch[1];\n  }\n  \n  try {\n    const idea = JSON.parse(jsonStr);\n    results.push({\n      json: {\n        ...idea,\n        post: idea.post_idea || idea,\n        reel: idea.reel_concept || {},\n        generated_at: new Date().toISOString()\n      }\n    });\n  } catch (e) {\n    // If JSON parsing fails, pass raw text for manual handling\n    results.push({\n      json: {\n        raw_response: responseText,\n        parse_error: e.message,\n        generated_at: new Date().toISOString()\n      }\n    });\n  }\n}\n\nreturn results;"
+      },
+      "id": "parse-ideation",
+      "name": "Parse Ideation Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://fal.run/fal-ai/flux-pro/v1.1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Key {{ $env.FAL_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"prompt\": \"{{ $json.post.image_prompt }}\",\n  \"image_size\": \"square_hd\",\n  \"num_images\": 3,\n  \"num_inference_steps\": 50,\n  \"guidance_scale\": 7.5\n}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "image-gen",
+      "name": "2. Image Generation (Flux 2 Max)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [920, 400],
+      "notes": "Add image_url field with character reference URL once generated"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "={{ $env.ANTHROPIC_API_KEY }}" },
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "content-type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-sonnet-4-5-20250929\",\n  \"max_tokens\": 1024,\n  \"system\": \"You are a social media copywriter for Erik Lindqvist, a Tech/AI Explainer AI influencer. Polish the given caption for Instagram. Voice: curious, analytical, friendly, slightly nerdy. Start with strong hook, keep 150-250 chars, end with CTA. Output JSON with: caption, cta, hashtags_comment (20-30 hashtags as string), alt_caption.\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Polish this caption for Instagram: {{ $json.post.caption }}\\n\\nOriginal hashtags: {{ JSON.stringify($json.post.hashtags) }}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "caption-refine",
+      "name": "3. Caption Refinement (Claude)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1140, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Assembly: combine image URLs, refined caption, hashtags, and metadata\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  // Get image URLs from image generation step\n  const imageGenOutput = $('2. Image Generation (Flux 2 Max)').first().json;\n  const images = imageGenOutput.images || [];\n  const imageUrl = images[0]?.url || 'NO_IMAGE_GENERATED';\n  const allImageUrls = images.map(img => img.url);\n\n  // Get original ideation data\n  const ideation = $('Parse Ideation Response').first().json;\n\n  // Parse refined caption\n  const captionResponse = item.json.content?.[0]?.text || '';\n  let refined = {};\n  try {\n    const jsonMatch = captionResponse.match(/```json?\\n?([\\s\\S]*?)```/);\n    refined = JSON.parse(jsonMatch ? jsonMatch[1] : captionResponse);\n  } catch (e) {\n    refined = { caption: ideation.post?.caption || '', hashtags_comment: ideation.post?.hashtags?.join(' ') || '' };\n  }\n\n  // Build the final post object\n  const scheduledDate = new Date();\n  scheduledDate.setHours(17, 0, 0, 0); // 17:00 CET\n\n  results.push({\n    json: {\n      platform: 'Instagram Feed',\n      caption: refined.caption || ideation.post?.caption,\n      alt_caption: refined.alt_caption || '',\n      hashtags: refined.hashtags_comment || ideation.post?.hashtags?.join(' '),\n      cta: refined.cta || '',\n      image_url: imageUrl,\n      all_image_urls: allImageUrls,\n      image_prompt: ideation.post?.image_prompt,\n      outfit: ideation.post?.outfit,\n      setting: ideation.post?.setting,\n      content_pillar: ideation.post?.content_pillar,\n      scheduled_date: scheduledDate.toISOString().split('T')[0],\n      scheduled_time: '17:00 CET',\n      reel_concept: ideation.reel,\n      generated_at: ideation.generated_at,\n      retry_count: 0,\n      max_retries: 3\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "assembly",
+      "name": "4. Assembly",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1360, 400]
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "file": "={{ $json.image_url }}",
+        "caption": "={{ '📱 NEW POST READY FOR REVIEW\\n\\n📸 Platform: ' + $json.platform + '\\n📅 Scheduled: ' + $json.scheduled_date + ' at ' + $json.scheduled_time + '\\n\\nCaption:\\n' + $json.caption + '\\n\\nHashtags:\\n' + $json.hashtags + '\\n\\nReply:\\n✅ — Approve & schedule\\n✏️ {new caption} — Edit caption\\n❌ — Reject & regenerate\\n🔄 — Regenerate image only' }}",
+        "additionalFields": {}
+      },
+      "id": "telegram-preview",
+      "name": "5. Telegram Preview",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1580, 400],
+      "credentials": {
+        "telegramApi": {
+          "id": "CONFIGURE_ME",
+          "name": "Telegram API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWaitForResponse",
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "message": "Reply with your decision (✅ / ✏️ new caption / ❌ / 🔄):",
+        "responseType": "freeText",
+        "timeout": "4h"
+      },
+      "id": "wait-approval",
+      "name": "5b. Wait for Approval",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1800, 400],
+      "credentials": {
+        "telegramApi": {
+          "id": "CONFIGURE_ME",
+          "name": "Telegram API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "rules": [
+            { "value": "✅", "operation": "startsWith", "output": 0 },
+            { "value": "yes", "operation": "equals", "output": 0 },
+            { "value": "✏️", "operation": "startsWith", "output": 1 },
+            { "value": "❌", "operation": "startsWith", "output": 2 },
+            { "value": "no", "operation": "equals", "output": 2 },
+            { "value": "🔄", "operation": "startsWith", "output": 3 }
+          ]
+        },
+        "fallbackOutput": "extra",
+        "dataType": "string",
+        "value1": "={{ $json.response }}"
+      },
+      "id": "route-decision",
+      "name": "6. Route Decision",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [2020, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// APPROVE: finalize the post for publishing\nconst items = $input.all();\nconst assembly = $('4. Assembly').first().json;\n\nfor (const item of items) {\n  item.json = {\n    ...assembly,\n    status: 'approved',\n    final_caption: assembly.caption,\n    approved_at: new Date().toISOString()\n  };\n}\nreturn items;"
+      },
+      "id": "approve",
+      "name": "Approve",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2260, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// EDIT CAPTION: extract new caption from response, then approve\nconst items = $input.all();\nconst assembly = $('4. Assembly').first().json;\n\nfor (const item of items) {\n  const response = item.json.response || '';\n  const newCaption = response.replace(/^✏️\\s*/, '').trim();\n  \n  item.json = {\n    ...assembly,\n    status: 'approved',\n    final_caption: newCaption || assembly.caption,\n    caption_edited: true,\n    approved_at: new Date().toISOString()\n  };\n}\nreturn items;"
+      },
+      "id": "edit-caption",
+      "name": "Edit Caption",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2260, 360]
+    },
+    {
+      "parameters": {
+        "jsCode": "// REJECT: check retry count, loop back or give up\nconst items = $input.all();\nconst assembly = $('4. Assembly').first().json;\n\nfor (const item of items) {\n  const retryCount = (assembly.retry_count || 0) + 1;\n  item.json = {\n    ...assembly,\n    status: retryCount >= assembly.max_retries ? 'abandoned' : 'rejected',\n    retry_count: retryCount\n  };\n}\nreturn items;"
+      },
+      "id": "reject",
+      "name": "Reject",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2260, 520]
+    },
+    {
+      "parameters": {
+        "jsCode": "// REGEN IMAGE: keep caption, regenerate image\nconst items = $input.all();\nconst assembly = $('4. Assembly').first().json;\n\nfor (const item of items) {\n  item.json = {\n    ...assembly,\n    status: 'regen_image'\n  };\n}\nreturn items;"
+      },
+      "id": "regen-image",
+      "name": "Regen Image",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2260, 680]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.status === 'rejected' && $json.retry_count < $json.max_retries }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "retry-check",
+      "name": "Retry Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2480, 520],
+      "notes": "If rejected and retries remaining, loop back to ideation. Otherwise, send abandoned notification."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.BUFFER_API_URL || 'https://api.bufferapp.com/1/updates/create.json' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/x-www-form-urlencoded" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "string",
+        "body": "=access_token={{ $env.BUFFER_ACCESS_TOKEN }}&profile_ids[]={{ $env.BUFFER_INSTAGRAM_PROFILE_ID }}&text={{ encodeURIComponent($json.final_caption) }}&media[photo]={{ encodeURIComponent($json.image_url) }}&scheduled_at={{ $json.scheduled_date }}T16:00:00Z",
+        "options": {}
+      },
+      "id": "publish",
+      "name": "7. Publish (Buffer)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2700, 280]
+    },
+    {
+      "parameters": {
+        "operation": "sendMessage",
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "={{ $json.status === 'approved' ? '✅ Post scheduled for ' + $('4. Assembly').first().json.scheduled_date + ' at ' + $('4. Assembly').first().json.scheduled_time + '!' : '⏭️ Post abandoned after ' + $json.retry_count + ' attempts.' }}"
+      },
+      "id": "confirm",
+      "name": "8. Confirm via Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [2920, 400],
+      "credentials": {
+        "telegramApi": {
+          "id": "CONFIGURE_ME",
+          "name": "Telegram API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Daily 09:00 CET Trigger": {
+      "main": [[{ "node": "1. Content Ideation (Claude)", "type": "main", "index": 0 }]]
+    },
+    "1. Content Ideation (Claude)": {
+      "main": [[{ "node": "Parse Ideation Response", "type": "main", "index": 0 }]]
+    },
+    "Parse Ideation Response": {
+      "main": [[{ "node": "2. Image Generation (Flux 2 Max)", "type": "main", "index": 0 }]]
+    },
+    "2. Image Generation (Flux 2 Max)": {
+      "main": [[{ "node": "3. Caption Refinement (Claude)", "type": "main", "index": 0 }]]
+    },
+    "3. Caption Refinement (Claude)": {
+      "main": [[{ "node": "4. Assembly", "type": "main", "index": 0 }]]
+    },
+    "4. Assembly": {
+      "main": [[{ "node": "5. Telegram Preview", "type": "main", "index": 0 }]]
+    },
+    "5. Telegram Preview": {
+      "main": [[{ "node": "5b. Wait for Approval", "type": "main", "index": 0 }]]
+    },
+    "5b. Wait for Approval": {
+      "main": [[{ "node": "6. Route Decision", "type": "main", "index": 0 }]]
+    },
+    "6. Route Decision": {
+      "main": [
+        [{ "node": "Approve", "type": "main", "index": 0 }],
+        [{ "node": "Edit Caption", "type": "main", "index": 0 }],
+        [{ "node": "Reject", "type": "main", "index": 0 }],
+        [{ "node": "Regen Image", "type": "main", "index": 0 }]
+      ]
+    },
+    "Approve": {
+      "main": [[{ "node": "7. Publish (Buffer)", "type": "main", "index": 0 }]]
+    },
+    "Edit Caption": {
+      "main": [[{ "node": "7. Publish (Buffer)", "type": "main", "index": 0 }]]
+    },
+    "Reject": {
+      "main": [[{ "node": "Retry Check", "type": "main", "index": 0 }]]
+    },
+    "Regen Image": {
+      "main": [[{ "node": "2. Image Generation (Flux 2 Max)", "type": "main", "index": 0 }]]
+    },
+    "Retry Check": {
+      "main": [
+        [{ "node": "1. Content Ideation (Claude)", "type": "main", "index": 0 }],
+        [{ "node": "8. Confirm via Telegram", "type": "main", "index": 0 }]
+      ]
+    },
+    "7. Publish (Buffer)": {
+      "main": [[{ "node": "8. Confirm via Telegram", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "tags": [
+    { "name": "content-generation" },
+    { "name": "daily" },
+    { "name": "instagram" }
+  ]
+}
