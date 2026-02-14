@@ -56,18 +56,18 @@ fi
 echo "[2/7] fal.ai (Flux 2 Max)"
 if [ -n "$FAL_KEY" ]; then
     RESPONSE=$(curl -s -w "\n%{http_code}" \
-        -X POST "https://fal.run/fal-ai/flux-pro/v1.1" \
+        -X POST "https://fal.run/fal-ai/nano-banana-pro" \
         -H "Authorization: Key $FAL_KEY" \
         -H "Content-Type: application/json" \
         -d '{"prompt":"test","image_size":"square","num_images":1,"num_inference_steps":4}' \
         --max-time 30)
     HTTP_CODE=$(echo "$RESPONSE" | tail -1)
     if [ "$HTTP_CODE" = "200" ]; then
-        print_result pass "fal.ai Flux 2 Max" "Image generation OK"
+        print_result pass "fal.ai Nano Banana Pro" "Image generation OK"
     elif [ "$HTTP_CODE" = "422" ] || [ "$HTTP_CODE" = "400" ]; then
-        print_result pass "fal.ai Flux 2 Max" "Auth OK (validation error expected for minimal test)"
+        print_result pass "fal.ai Nano Banana Pro" "Auth OK (validation error expected for minimal test)"
     else
-        print_result fail "fal.ai Flux 2 Max" "HTTP $HTTP_CODE"
+        print_result fail "fal.ai Nano Banana Pro" "HTTP $HTTP_CODE"
     fi
 else
     print_result skip "fal.ai API"

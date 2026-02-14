@@ -16,7 +16,7 @@ if [ -z "$FAL_KEY" ]; then
     exit 1
 fi
 
-API_URL="https://fal.run/fal-ai/flux-pro/v1.1"
+API_URL="https://fal.run/fal-ai/nano-banana-pro"
 OUTPUT_DIR="$PROJECT_ROOT/assets/character/references"
 OUTFITS_DIR="$PROJECT_ROOT/assets/character/outfits"
 

@@ -1,6 +1,6 @@
 # Character Reference Generation Prompts
 
-Use these prompts with Flux 2 Max (via fal.ai) to generate the base character.
+Use these prompts with Nano Banana Pro (via fal.ai) to generate the base character.
 
 ## Important
 - Generate the **base references first** (front, 3/4, full body) on a clean white background
@@ -89,7 +89,7 @@ A 28-year-old Nordic man with light brown slightly tousled hair, light stubble, 
 ## API Parameters
 ```json
 {
-  "model": "fal-ai/flux-pro/v1.1",
+  "model": "fal-ai/nano-banana-pro",
   "image_size": "square_hd",
   "num_images": 3,
   "num_inference_steps": 50,

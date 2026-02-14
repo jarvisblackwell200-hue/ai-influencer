@@ -1,4 +1,4 @@
-# Image Prompt Templates for Flux 2 Max
+# Image Prompt Templates for Nano Banana Pro
 
 ## Base Character Description
 ```
@@ -51,7 +51,7 @@ A 28-year-old Nordic man with light brown tousled hair, light stubble, hazel eye
 ## Technical Parameters
 ```json
 {
-  "model": "fal-ai/flux-pro/v1.1",
+  "model": "fal-ai/nano-banana-pro",
   "image_url": "<character reference URL>",
   "num_images": 3,
   "image_size": "square_hd",

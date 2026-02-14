@@ -58,9 +58,9 @@ content-type: application/json
 
 ---
 
-## 2. fal.ai — Flux 2 Max (Image Generation)
+## 2. fal.ai — Nano Banana Pro (Image Generation)
 
-**Endpoint:** `POST https://fal.run/fal-ai/flux-pro/v1.1`
+**Endpoint:** `POST https://fal.run/fal-ai/nano-banana-pro`
 
 **Headers:**
 ```
@@ -93,7 +93,7 @@ Content-Type: application/json
 }
 ```
 
-**Docs:** https://fal.ai/models/fal-ai/flux-pro/v1.1
+**Docs:** https://fal.ai/models/fal-ai/nano-banana-pro
 
 ---
 

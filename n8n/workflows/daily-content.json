@@ -32,7 +32,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"claude-sonnet-4-5-20250929\",\n  \"max_tokens\": 2048,\n  \"system\": \"You are a content strategist for Erik Lindqvist, a Tech/AI Explainer AI influencer based in Stockholm. Generate 1 Instagram post idea. Always respond in JSON with fields: hook, caption (150-250 chars with CTA), image_prompt (detailed Flux 2 Max prompt including: 'A 28-year-old Nordic man with light brown tousled hair, light stubble, hazel eyes, minimal round glasses' + outfit + setting + 'photorealistic, natural lighting, 4K'), outfit (1-5), setting (home_office/stockholm_streets/coffee_shop/coworking/archipelago), hashtags (20-30 tags), content_pillar (educational/trend_commentary/lifestyle/engagement). Also include reel_concept with: title, hook, script_outline (15-sec), trending_angle. Use Erik's voice: curious, analytical, no-nonsense. Avoid clickbait.\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Generate today's Instagram post idea. Today is {{ $now.format('EEEE, MMMM d') }}. Content pillar for this week: {{ $json.content_pillar || 'educational' }}. Focus on trending AI/tech topics.\"\n    }\n  ]\n}",
+        "jsonBody": "={\n  \"model\": \"claude-sonnet-4-5-20250929\",\n  \"max_tokens\": 2048,\n  \"system\": \"You are a content strategist for Erik Lindqvist, a Tech/AI Explainer AI influencer based in Stockholm. Generate 1 Instagram post idea. Always respond in JSON with fields: hook, caption (150-250 chars with CTA), image_prompt (detailed Nano Banana Pro prompt including: 'A 28-year-old Nordic man with light brown tousled hair, light stubble, hazel eyes, minimal round glasses' + outfit + setting + 'photorealistic, natural lighting, 4K'), outfit (1-5), setting (home_office/stockholm_streets/coffee_shop/coworking/archipelago), hashtags (20-30 tags), content_pillar (educational/trend_commentary/lifestyle/engagement). Also include reel_concept with: title, hook, script_outline (15-sec), trending_angle. Use Erik's voice: curious, analytical, no-nonsense. Avoid clickbait.\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Generate today's Instagram post idea. Today is {{ $now.format('EEEE, MMMM d') }}. Content pillar for this week: {{ $json.content_pillar || 'educational' }}. Focus on trending AI/tech topics.\"\n    }\n  ]\n}",
         "options": {}
       },
       "id": "ideation",
@@ -54,7 +54,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://fal.run/fal-ai/flux-pro/v1.1",
+        "url": "https://fal.run/fal-ai/nano-banana-pro",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -70,7 +70,7 @@
         }
       },
       "id": "image-gen",
-      "name": "2. Image Generation (Flux 2 Max)",
+      "name": "2. Image Generation (Nano Banana Pro)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [920, 400],
@@ -101,7 +101,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Assembly: combine image URLs, refined caption, hashtags, and metadata\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  // Get image URLs from image generation step\n  const imageGenOutput = $('2. Image Generation (Flux 2 Max)').first().json;\n  const images = imageGenOutput.images || [];\n  const imageUrl = images[0]?.url || 'NO_IMAGE_GENERATED';\n  const allImageUrls = images.map(img => img.url);\n\n  // Get original ideation data\n  const ideation = $('Parse Ideation Response').first().json;\n\n  // Parse refined caption\n  const captionResponse = item.json.content?.[0]?.text || '';\n  let refined = {};\n  try {\n    const jsonMatch = captionResponse.match(/```json?\\n?([\\s\\S]*?)```/);\n    refined = JSON.parse(jsonMatch ? jsonMatch[1] : captionResponse);\n  } catch (e) {\n    refined = { caption: ideation.post?.caption || '', hashtags_comment: ideation.post?.hashtags?.join(' ') || '' };\n  }\n\n  // Build the final post object\n  const scheduledDate = new Date();\n  scheduledDate.setHours(17, 0, 0, 0); // 17:00 CET\n\n  results.push({\n    json: {\n      platform: 'Instagram Feed',\n      caption: refined.caption || ideation.post?.caption,\n      alt_caption: refined.alt_caption || '',\n      hashtags: refined.hashtags_comment || ideation.post?.hashtags?.join(' '),\n      cta: refined.cta || '',\n      image_url: imageUrl,\n      all_image_urls: allImageUrls,\n      image_prompt: ideation.post?.image_prompt,\n      outfit: ideation.post?.outfit,\n      setting: ideation.post?.setting,\n      content_pillar: ideation.post?.content_pillar,\n      scheduled_date: scheduledDate.toISOString().split('T')[0],\n      scheduled_time: '17:00 CET',\n      reel_concept: ideation.reel,\n      generated_at: ideation.generated_at,\n      retry_count: 0,\n      max_retries: 3\n    }\n  });\n}\n\nreturn results;"
+        "jsCode": "// Assembly: combine image URLs, refined caption, hashtags, and metadata\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  // Get image URLs from image generation step\n  const imageGenOutput = $('2. Image Generation (Nano Banana Pro)').first().json;\n  const images = imageGenOutput.images || [];\n  const imageUrl = images[0]?.url || 'NO_IMAGE_GENERATED';\n  const allImageUrls = images.map(img => img.url);\n\n  // Get original ideation data\n  const ideation = $('Parse Ideation Response').first().json;\n\n  // Parse refined caption\n  const captionResponse = item.json.content?.[0]?.text || '';\n  let refined = {};\n  try {\n    const jsonMatch = captionResponse.match(/```json?\\n?([\\s\\S]*?)```/);\n    refined = JSON.parse(jsonMatch ? jsonMatch[1] : captionResponse);\n  } catch (e) {\n    refined = { caption: ideation.post?.caption || '', hashtags_comment: ideation.post?.hashtags?.join(' ') || '' };\n  }\n\n  // Build the final post object\n  const scheduledDate = new Date();\n  scheduledDate.setHours(17, 0, 0, 0); // 17:00 CET\n\n  results.push({\n    json: {\n      platform: 'Instagram Feed',\n      caption: refined.caption || ideation.post?.caption,\n      alt_caption: refined.alt_caption || '',\n      hashtags: refined.hashtags_comment || ideation.post?.hashtags?.join(' '),\n      cta: refined.cta || '',\n      image_url: imageUrl,\n      all_image_urls: allImageUrls,\n      image_prompt: ideation.post?.image_prompt,\n      outfit: ideation.post?.outfit,\n      setting: ideation.post?.setting,\n      content_pillar: ideation.post?.content_pillar,\n      scheduled_date: scheduledDate.toISOString().split('T')[0],\n      scheduled_time: '17:00 CET',\n      reel_concept: ideation.reel,\n      generated_at: ideation.generated_at,\n      retry_count: 0,\n      max_retries: 3\n    }\n  });\n}\n\nreturn results;"
       },
       "id": "assembly",
       "name": "4. Assembly",
@@ -277,9 +277,9 @@
       "main": [[{ "node": "Parse Ideation Response", "type": "main", "index": 0 }]]
     },
     "Parse Ideation Response": {
-      "main": [[{ "node": "2. Image Generation (Flux 2 Max)", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "2. Image Generation (Nano Banana Pro)", "type": "main", "index": 0 }]]
     },
-    "2. Image Generation (Flux 2 Max)": {
+    "2. Image Generation (Nano Banana Pro)": {
       "main": [[{ "node": "3. Caption Refinement (Claude)", "type": "main", "index": 0 }]]
     },
     "3. Caption Refinement (Claude)": {
@@ -312,7 +312,7 @@
       "main": [[{ "node": "Retry Check", "type": "main", "index": 0 }]]
     },
     "Regen Image": {
-      "main": [[{ "node": "2. Image Generation (Flux 2 Max)", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "2. Image Generation (Nano Banana Pro)", "type": "main", "index": 0 }]]
     },
     "Retry Check": {
       "main": [

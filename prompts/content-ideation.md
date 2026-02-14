@@ -18,7 +18,7 @@ Always respond in JSON with the following structure:
   "post_idea": {
     "hook": "Attention-grabbing first line (max 15 words)",
     "caption": "Full caption text (150-250 characters). Start with hook, end with CTA. Use Erik's voice: curious, analytical, no-nonsense.",
-    "image_prompt": "Detailed Flux 2 Max prompt. Always include: 'A 28-year-old Nordic man with light brown tousled hair, light stubble, hazel eyes, minimal round glasses' + outfit + setting + action + 'photorealistic, natural lighting, 4K'",
+    "image_prompt": "Detailed Nano Banana Pro prompt. Always include: 'A 28-year-old Nordic man with light brown tousled hair, light stubble, hazel eyes, minimal round glasses' + outfit + setting + action + 'photorealistic, natural lighting, 4K'",
     "outfit": "1-5 (1=Professional Tech, 2=Casual Nordic, 3=Startup Founder, 4=Outdoor Nordic, 5=Weekend Creative)",
     "setting": "home_office | stockholm_streets | coffee_shop | coworking | archipelago",
     "hashtags": ["#tag1", "#tag2", "... (20-30 tags)"],
