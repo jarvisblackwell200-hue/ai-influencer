@@ -1,0 +1,295 @@
+{
+  "name": "Video Content Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 10 * * 1,3,5"
+            }
+          ]
+        }
+      },
+      "id": "cron-trigger",
+      "name": "3x Weekly Trigger (Mon/Wed/Fri)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "={{ $env.ANTHROPIC_API_KEY }}" },
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "content-type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-sonnet-4-5-20250929\",\n  \"max_tokens\": 2048,\n  \"system\": \"You are a short-form video scriptwriter for Erik Lindqvist, a Tech/AI Explainer AI influencer based in Stockholm. Write punchy 15-second scripts for TikTok/Reels/Shorts. Output JSON with: title, duration (15), shots (array of {shot_number, time_range, type (hook/main_content/cta), visual (detailed AI video gen description), narration (exact words), text_overlay, camera (close-up/medium/wide)}), music_suggestion, trending_format, outfit (1-5), setting. Erik's look: 28-year-old Nordic man, light brown tousled hair, stubble, hazel eyes, round glasses. Voice: curious, analytical, slightly nerdy.\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Write a 15-second TikTok/Reels script about a trending AI topic. Today is {{ $now.format('EEEE, MMMM d') }}. Make it educational but entertaining. Hook must stop the scroll in first 2 seconds.\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "script-gen",
+      "name": "1. Script Generation (Claude)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse script from Claude response\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const responseText = item.json.content?.[0]?.text || '';\n  let jsonStr = responseText;\n  const jsonMatch = responseText.match(/```json?\\n?([\\s\\S]*?)```/);\n  if (jsonMatch) jsonStr = jsonMatch[1];\n\n  try {\n    const script = JSON.parse(jsonStr);\n    // Build narration text from all shots\n    const fullNarration = (script.shots || [])\n      .map(s => s.narration)\n      .filter(Boolean)\n      .join(' ');\n\n    results.push({\n      json: {\n        script,\n        full_narration: fullNarration,\n        title: script.title,\n        duration: script.duration || 15,\n        outfit: script.outfit,\n        setting: script.setting,\n        generated_at: new Date().toISOString()\n      }\n    });\n  } catch (e) {\n    results.push({\n      json: {\n        raw_response: responseText,\n        parse_error: e.message\n      }\n    });\n  }\n}\nreturn results;"
+      },
+      "id": "parse-script",
+      "name": "Parse Script",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.elevenlabs.io/v1/text-to-speech/{{ $env.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "xi-api-key", "value": "={{ $env.ELEVENLABS_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Accept", "value": "audio/mpeg" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"{{ $json.full_narration }}\",\n  \"model_id\": \"eleven_multilingual_v2\",\n  \"voice_settings\": {\n    \"stability\": 0.5,\n    \"similarity_boost\": 0.75,\n    \"style\": 0.3,\n    \"use_speaker_boost\": true\n  }\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          },
+          "timeout": 60000
+        }
+      },
+      "id": "voice-gen",
+      "name": "2. Voice Generation (ElevenLabs)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [920, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare video generation request\n// First, generate a still image of the character, then animate it\nconst items = $input.all();\nconst script = $('Parse Script').first().json.script;\nconst firstShot = script.shots?.[0] || {};\n\n// Build the image prompt from the first shot's visual description\nconst characterDesc = 'A 28-year-old Nordic man with light brown tousled hair, light stubble, hazel eyes, minimal round glasses';\nconst imagePrompt = `${characterDesc}, ${firstShot.visual || 'looking at camera, talking'}, photorealistic, natural lighting, 4K`;\n\nfor (const item of items) {\n  item.json.image_prompt_for_video = imagePrompt;\n  item.json.script = script;\n  item.json.audio_data = item.json.data; // audio binary from ElevenLabs\n}\nreturn items;"
+      },
+      "id": "prep-video",
+      "name": "Prepare Video Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1140, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://fal.run/fal-ai/kling-video/v1/standard/image-to-video",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Key {{ $env.FAL_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"prompt\": \"{{ $json.script.shots.map(s => s.visual).join('. ') }}\",\n  \"image_url\": \"{{ $env.CHARACTER_REFERENCE_URL || '' }}\",\n  \"duration\": \"5\",\n  \"aspect_ratio\": \"9:16\"\n}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "video-gen",
+      "name": "3. Video Generation (Kling 3.0)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1360, 400],
+      "notes": "Kling 3.0 via fal.ai — generates 5-sec clips from image + prompt. May need multiple clips stitched."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Assembly: combine video URL, script, audio, and metadata\nconst items = $input.all();\nconst script = $('Parse Script').first().json;\nconst videoOutput = items[0].json;\n\nconst videoUrl = videoOutput.video?.url || videoOutput.url || 'NO_VIDEO_GENERATED';\n\nconst scheduledDate = new Date();\nscheduledDate.setHours(19, 0, 0, 0); // 19:00 CET for TikTok\n\nreturn [{\n  json: {\n    title: script.title,\n    platform: 'TikTok + Reels + Shorts',\n    video_url: videoUrl,\n    script_text: script.full_narration,\n    script_details: script.script,\n    duration: script.duration,\n    outfit: script.outfit,\n    setting: script.setting,\n    scheduled_date: scheduledDate.toISOString().split('T')[0],\n    scheduled_time: '19:00 CET',\n    generated_at: script.generated_at,\n    retry_count: 0,\n    max_retries: 3\n  }\n}];"
+      },
+      "id": "video-assembly",
+      "name": "4. Video Assembly",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1580, 400]
+    },
+    {
+      "parameters": {
+        "operation": "sendVideo",
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "file": "={{ $json.video_url }}",
+        "caption": "={{ '🎬 NEW VIDEO READY FOR REVIEW\\n\\n📸 Platform: ' + $json.platform + '\\n📅 Scheduled: ' + $json.scheduled_date + ' at ' + $json.scheduled_time + '\\n⏱ Duration: ' + $json.duration + 's\\n\\nTitle: ' + $json.title + '\\n\\nScript:\\n' + $json.script_text + '\\n\\nReply:\\n✅ — Approve & schedule\\n✏️ {edit notes} — Edit & approve\\n❌ — Reject & regenerate\\n🔄 — Regenerate video only' }}",
+        "additionalFields": {}
+      },
+      "id": "telegram-video-preview",
+      "name": "5. Telegram Video Preview",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1800, 400],
+      "credentials": {
+        "telegramApi": {
+          "id": "CONFIGURE_ME",
+          "name": "Telegram API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWaitForResponse",
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "message": "Reply with your decision (✅ / ✏️ notes / ❌ / 🔄):",
+        "responseType": "freeText",
+        "timeout": "4h"
+      },
+      "id": "wait-video-approval",
+      "name": "5b. Wait for Video Approval",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [2020, 400],
+      "credentials": {
+        "telegramApi": {
+          "id": "CONFIGURE_ME",
+          "name": "Telegram API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "rules": [
+            { "value": "✅", "operation": "startsWith", "output": 0 },
+            { "value": "yes", "operation": "equals", "output": 0 },
+            { "value": "✏️", "operation": "startsWith", "output": 0 },
+            { "value": "❌", "operation": "startsWith", "output": 1 },
+            { "value": "no", "operation": "equals", "output": 1 },
+            { "value": "🔄", "operation": "startsWith", "output": 2 }
+          ]
+        },
+        "fallbackOutput": "extra",
+        "dataType": "string",
+        "value1": "={{ $json.response }}"
+      },
+      "id": "video-route",
+      "name": "6. Route Video Decision",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [2240, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Approved — prepare for multi-platform publishing\nconst items = $input.all();\nconst assembly = $('4. Video Assembly').first().json;\n\nreturn [{\n  json: {\n    ...assembly,\n    status: 'approved',\n    approved_at: new Date().toISOString(),\n    publish_to: ['tiktok', 'instagram_reels', 'youtube_shorts']\n  }\n}];"
+      },
+      "id": "video-approve",
+      "name": "Approve Video",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2460, 260]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Rejected — increment retry\nconst assembly = $('4. Video Assembly').first().json;\nconst retryCount = (assembly.retry_count || 0) + 1;\n\nreturn [{\n  json: {\n    ...assembly,\n    status: retryCount >= 3 ? 'abandoned' : 'rejected',\n    retry_count: retryCount\n  }\n}];"
+      },
+      "id": "video-reject",
+      "name": "Reject Video",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2460, 420]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Regen video only — keep script\nconst assembly = $('4. Video Assembly').first().json;\nreturn [{ json: { ...assembly, status: 'regen_video' } }];"
+      },
+      "id": "video-regen",
+      "name": "Regen Video",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2460, 580]
+    },
+    {
+      "parameters": {
+        "operation": "sendMessage",
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "={{ $json.status === 'approved' ? '✅ Video \"' + $json.title + '\" scheduled for ' + $json.scheduled_date + ' across TikTok, Reels & Shorts!' : $json.status === 'abandoned' ? '⏭️ Video abandoned after ' + $json.retry_count + ' attempts.' : '🔄 Regenerating...' }}"
+      },
+      "id": "video-confirm",
+      "name": "7. Confirm via Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [2700, 400],
+      "credentials": {
+        "telegramApi": {
+          "id": "CONFIGURE_ME",
+          "name": "Telegram API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "3x Weekly Trigger (Mon/Wed/Fri)": {
+      "main": [[{ "node": "1. Script Generation (Claude)", "type": "main", "index": 0 }]]
+    },
+    "1. Script Generation (Claude)": {
+      "main": [[{ "node": "Parse Script", "type": "main", "index": 0 }]]
+    },
+    "Parse Script": {
+      "main": [[{ "node": "2. Voice Generation (ElevenLabs)", "type": "main", "index": 0 }]]
+    },
+    "2. Voice Generation (ElevenLabs)": {
+      "main": [[{ "node": "Prepare Video Input", "type": "main", "index": 0 }]]
+    },
+    "Prepare Video Input": {
+      "main": [[{ "node": "3. Video Generation (Kling 3.0)", "type": "main", "index": 0 }]]
+    },
+    "3. Video Generation (Kling 3.0)": {
+      "main": [[{ "node": "4. Video Assembly", "type": "main", "index": 0 }]]
+    },
+    "4. Video Assembly": {
+      "main": [[{ "node": "5. Telegram Video Preview", "type": "main", "index": 0 }]]
+    },
+    "5. Telegram Video Preview": {
+      "main": [[{ "node": "5b. Wait for Video Approval", "type": "main", "index": 0 }]]
+    },
+    "5b. Wait for Video Approval": {
+      "main": [[{ "node": "6. Route Video Decision", "type": "main", "index": 0 }]]
+    },
+    "6. Route Video Decision": {
+      "main": [
+        [{ "node": "Approve Video", "type": "main", "index": 0 }],
+        [{ "node": "Reject Video", "type": "main", "index": 0 }],
+        [{ "node": "Regen Video", "type": "main", "index": 0 }]
+      ]
+    },
+    "Approve Video": {
+      "main": [[{ "node": "7. Confirm via Telegram", "type": "main", "index": 0 }]]
+    },
+    "Reject Video": {
+      "main": [[{ "node": "7. Confirm via Telegram", "type": "main", "index": 0 }]]
+    },
+    "Regen Video": {
+      "main": [[{ "node": "3. Video Generation (Kling 3.0)", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "tags": [
+    { "name": "video" },
+    { "name": "tiktok" },
+    { "name": "reels" },
+    { "name": "shorts" }
+  ]
+}
