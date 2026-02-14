@@ -1,0 +1,23 @@
+# Environment variables and secrets
+.env
+credentials.env
+*.key
+
+# Node modules
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# n8n data
+n8n_data/
+
+# Generated assets (large files)
+assets/character/references/*.png
+assets/character/references/*.jpg
+assets/character/outfits/*.png
+assets/character/outfits/*.jpg
+
+# Logs
+*.log
