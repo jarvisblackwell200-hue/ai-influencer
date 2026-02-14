@@ -20,29 +20,31 @@ Pick **one** primary niche. These are ranked by proven AI influencer revenue:
 | 4 | **ASMR / Relaxation** | Low-effort content, high volume scaling, YouTube monetization friendly | YouTube ad revenue, Patreon, merch |
 | 5 | **Fitness / Wellness** | Subscription model potential, challenge-based monetization | Paid challenges, affiliate, coaching upsells |
 
-**Recommended for Chris:** `Tech / AI Explainer` or `Finance / Investing` — leverages your actual domain expertise (AI products, trading systems, Swedish ISK investing), highest monetization ceiling, and Swedish market angle is a differentiator.
+**Selected niche:** `Fashion / Lifestyle` — highest proven revenue for AI influencers, visual-first plays to AI image strengths, massive brand deal market, Instagram-native.
 
 ### Influencer Identity Blueprint
 
 ```yaml
 persona:
-  name: "[Choose a Scandinavian-tech-sounding name]"
-  age_appearance: 25-32
-  gender: "[Choose]"
-  ethnicity_appearance: "Nordic / ambiguous-European"
+  name: "Elsa Vikström"
+  age_appearance: 24
+  gender: "Female"
+  ethnicity_appearance: "Ethnically ambiguous — classically beautiful"
   personality_traits:
-    - "Curious and analytical"
-    - "Friendly but no-nonsense"
-    - "Slightly nerdy, self-aware about it"
-  backstory: "Stockholm-based tech enthusiast who breaks down AI, fintech, and investing for Nordic audiences"
+    - "Effortlessly stylish and confident"
+    - "Warm and relatable, not pretentious"
+    - "Playful with dry Nordic wit"
+    - "Aspirational but accessible"
+  backstory: "Stockholm-based fashion and lifestyle creator. Curates Scandinavian minimalist style with bold accents. Known for mixing high-end and affordable fashion."
   language: "English (primary), Swedish (secondary content)"
   disclosure: "Always disclose AI-generated nature in bio — legally required by FTC and EU AI Act"
 
 visual_identity:
-  style: "Clean Scandinavian minimalism — light backgrounds, muted tones, occasional pop colors"
-  wardrobe_capsule: 5-7 distinct outfits rotated for realism
-  signature_elements: "Glasses optional, specific hairstyle, always same face"
-  settings: ["home office", "Stockholm streets", "coffee shop", "co-working space", "nature/archipelago"]
+  style: "Scandinavian chic — clean lines, neutral palette with statement pieces, effortless elegance"
+  physical: "Long dark brown wavy hair, warm olive skin, deep brown almond-shaped eyes, high cheekbones, full lips, natural glowing makeup"
+  wardrobe_capsule: 7 distinct outfits (Scandi Minimal, City Chic, Athleisure Luxe, Summer Nordic, Date Night, Cozy Home, Street Style)
+  signature_elements: "Minimalist gold jewelry (thin necklace, small hoop earrings), natural glowing skin"
+  settings: ["Stockholm apartment", "Stockholm streets", "fashion district", "coffee shop", "archipelago"]
 ```
 
 ---
@@ -53,17 +55,16 @@ visual_identity:
 
 | Model | Use Case | Why |
 |-------|----------|-----|
-| **Flux 2 Max** (Black Forest Labs) | Primary character images | Best-in-class character consistency with multi-reference support (up to 10 refs). Open-weight, full control. Use via API (fal.ai, Replicate, or self-host) |
-| **Flux 2 Flex** | Quick variations / drafts | Faster than Max, good for batch iteration |
+| **Nano Banana Pro** (Google/Gemini 3 Pro Image) | **PRIMARY — All character images** | Best photorealism, up to 10 reference images for character consistency, 4K output, excellent text rendering. Use via fal.ai API (`fal-ai/nano-banana-pro`) |
 | **GPT Image 1.5** (OpenAI) | Posts with text overlays, infographics | #1 ranked for text rendering in images (LM Arena score 1264) |
+| **Flux 2 Max** (Black Forest Labs) | Backup / batch iteration | Open-weight, fast, good for high-volume drafts |
 | **Midjourney v7** | Hero/editorial shots | Unmatched aesthetic quality for key posts |
-| **Seedream 4.5** (ByteDance) | High volume / budget content | Cost-effective, good style consistency across batches |
 
 **Character Consistency Workflow:**
-1. Generate ONE "base character" image (neutral pose, full body, front-facing) with Flux 2 Max
+1. Generate ONE "base character" image (neutral pose, full body, front-facing) with **Nano Banana Pro**
 2. Save as reference image(s) — face close-up + full body + 3/4 angle
-3. All subsequent generations use these as `--cref` (character reference) inputs
-4. Create 5-7 outfit variations locked as templates
+3. All subsequent generations use these as reference image inputs (up to 10 refs supported)
+4. Create 7 outfit variations locked as templates
 5. Store all reference images in `/assets/character/references/`
 
 ### Video Generation

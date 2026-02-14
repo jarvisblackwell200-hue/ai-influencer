@@ -1,6 +1,6 @@
 #!/bin/bash
 # AI Influencer — Character Reference Generation Script
-# Uses fal.ai API to generate base character images with Flux 2 Max
+# Uses fal.ai API to generate base character images with Nano Banana Pro
 
 set -e
 
@@ -64,17 +64,17 @@ else:
 # --- BASE REFERENCES ---
 echo "[1/3] Front-facing portrait..."
 generate_image \
-    "A 28-year-old Nordic man with light brown slightly tousled hair, light stubble, warm hazel eyes, minimal round glasses, warm friendly expression. Head and shoulders portrait, front-facing, neutral pose. Clean white studio background. Photorealistic, natural studio lighting, sharp focus, 4K quality." \
+    "A 24-year-old ethnically ambiguous classically beautiful woman with long dark brown wavy hair, warm olive skin, deep brown almond-shaped eyes, high cheekbones, full lips, natural glowing makeup, minimalist gold thin necklace and small hoop earrings, warm confident smile. Head and shoulders portrait, front-facing, neutral pose. Clean white studio background. Photorealistic, natural studio lighting, sharp focus, 4K quality." \
     "$OUTPUT_DIR/base-front.png"
 
 echo "[2/3] Three-quarter angle portrait..."
 generate_image \
-    "A 28-year-old Nordic man with light brown slightly tousled hair, light stubble, warm hazel eyes, minimal round glasses, slight smile. Head and shoulders portrait, three-quarter angle looking slightly right. Clean white studio background. Photorealistic, natural studio lighting, sharp focus, 4K quality." \
+    "A 24-year-old ethnically ambiguous classically beautiful woman with long dark brown wavy hair, warm olive skin, deep brown almond-shaped eyes, high cheekbones, full lips, natural glowing makeup, minimalist gold jewelry, slight smile looking slightly right. Head and shoulders portrait, three-quarter angle. Clean white studio background. Photorealistic, natural studio lighting, sharp focus, 4K quality." \
     "$OUTPUT_DIR/base-three-quarter.png"
 
 echo "[3/3] Full body shot..."
 generate_image \
-    "A 28-year-old Nordic man with light brown slightly tousled hair, light stubble, warm hazel eyes, minimal round glasses, standing in relaxed pose with hands in pockets. Wearing a navy blue crew-neck sweater over white collared shirt and dark chinos. Full body shot. Clean white studio background. Photorealistic, natural studio lighting, 4K quality." \
+    "A 24-year-old ethnically ambiguous classically beautiful woman with long dark brown wavy hair, warm olive skin, deep brown almond-shaped eyes, high cheekbones, full lips, natural glowing makeup, minimalist gold jewelry. Wearing an oversized cream knit sweater, tailored camel coat, straight-leg jeans, and white sneakers. Full body standing pose, one hand on hip. Clean white studio background. Photorealistic, natural studio lighting, 4K quality." \
     "$OUTPUT_DIR/base-full-body.png"
 
 echo ""
@@ -89,34 +89,46 @@ if [ -n "$REF_URL" ]; then
     echo "=== Generating Outfit Variations ==="
     echo ""
 
-    echo "[1/5] Professional Tech..."
+    echo "[1/7] Scandi Minimal..."
     generate_image \
-        "A 28-year-old Nordic man with minimal round glasses wearing a navy blue crew-neck sweater over white collared shirt, dark chinos, clean white sneakers. Standing confidently with arms crossed. White studio background. Photorealistic, 4K." \
-        "$OUTFITS_DIR/outfit-1-professional.png" \
+        "A 24-year-old ethnically ambiguous classically beautiful woman with long dark brown wavy hair, warm olive skin, deep brown almond-shaped eyes, wearing an oversized cream knit sweater, tailored camel coat draped over shoulders, straight-leg jeans, white sneakers. Standing with hands in coat pockets. White studio background. Photorealistic, 4K." \
+        "$OUTFITS_DIR/outfit-1-scandi-minimal.png" \
         "$REF_URL"
 
-    echo "[2/5] Casual Nordic..."
+    echo "[2/7] City Chic..."
     generate_image \
-        "A 28-year-old Nordic man with minimal round glasses wearing a light grey merino wool hoodie over a white t-shirt, dark slim jeans, white minimalist sneakers. Relaxed standing pose. White studio background. Photorealistic, 4K." \
-        "$OUTFITS_DIR/outfit-2-casual.png" \
+        "A 24-year-old ethnically ambiguous classically beautiful woman with long dark brown wavy hair, warm olive skin, deep brown almond-shaped eyes, wearing a black leather blazer, white silk camisole, high-waisted black trousers, pointed black heels. Confident pose with one hand on hip. White studio background. Photorealistic, 4K." \
+        "$OUTFITS_DIR/outfit-2-city-chic.png" \
         "$REF_URL"
 
-    echo "[3/5] Startup Founder..."
+    echo "[3/7] Athleisure Luxe..."
     generate_image \
-        "A 28-year-old Nordic man with minimal round glasses wearing a black turtleneck, charcoal slim-fit blazer, dark trousers, black leather shoes. Standing with one hand adjusting glasses. White studio background. Photorealistic, 4K." \
-        "$OUTFITS_DIR/outfit-3-startup.png" \
+        "A 24-year-old ethnically ambiguous classically beautiful woman with long dark brown wavy hair, warm olive skin, deep brown almond-shaped eyes, wearing a matching sage green crop top and high-waisted leggings set, white running shoes, oversized sunglasses pushed up on head. Relaxed athletic pose. White studio background. Photorealistic, 4K." \
+        "$OUTFITS_DIR/outfit-3-athleisure.png" \
         "$REF_URL"
 
-    echo "[4/5] Outdoor Nordic..."
+    echo "[4/7] Summer Nordic..."
     generate_image \
-        "A 28-year-old Nordic man with minimal round glasses wearing an olive green field jacket, cream knit sweater underneath, khaki pants, brown leather boots. Relaxed pose. White studio background. Photorealistic, 4K." \
-        "$OUTFITS_DIR/outfit-4-outdoor.png" \
+        "A 24-year-old ethnically ambiguous classically beautiful woman with long dark brown wavy hair, warm olive skin, deep brown almond-shaped eyes, wearing a flowy white linen midi dress, carrying a straw basket bag, tan leather sandals, layered gold jewelry. Light summer pose. White studio background. Photorealistic, 4K." \
+        "$OUTFITS_DIR/outfit-4-summer.png" \
         "$REF_URL"
 
-    echo "[5/5] Weekend Creative..."
+    echo "[5/7] Date Night..."
     generate_image \
-        "A 28-year-old Nordic man with minimal round glasses wearing an oversized white linen shirt with rolled sleeves, light wash relaxed jeans, tan loafers. Casual leaning pose. White studio background. Photorealistic, 4K." \
-        "$OUTFITS_DIR/outfit-5-weekend.png" \
+        "A 24-year-old ethnically ambiguous classically beautiful woman with long dark brown wavy hair, warm olive skin, deep brown almond-shaped eyes, wearing a fitted black mini dress, gold statement earrings, strappy black heels, small black clutch bag. Elegant pose. White studio background. Photorealistic, 4K." \
+        "$OUTFITS_DIR/outfit-5-date-night.png" \
+        "$REF_URL"
+
+    echo "[6/7] Cozy Home..."
+    generate_image \
+        "A 24-year-old ethnically ambiguous classically beautiful woman with long dark brown wavy hair in messy bun, warm olive skin, deep brown almond-shaped eyes, wearing an oversized cashmere cardigan in oatmeal, silk pajama pants, wool socks, holding a ceramic mug. Relaxed cozy pose. White studio background. Photorealistic, 4K." \
+        "$OUTFITS_DIR/outfit-6-cozy-home.png" \
+        "$REF_URL"
+
+    echo "[7/7] Street Style..."
+    generate_image \
+        "A 24-year-old ethnically ambiguous classically beautiful woman with long dark brown wavy hair, warm olive skin, deep brown almond-shaped eyes, wearing an oversized denim jacket, white graphic tee, olive cargo pants, chunky black boots, black crossbody bag. Cool casual pose. White studio background. Photorealistic, 4K." \
+        "$OUTFITS_DIR/outfit-7-street-style.png" \
         "$REF_URL"
 
     echo ""
