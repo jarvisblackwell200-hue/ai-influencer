@@ -1,0 +1,21 @@
+{
+  "$schema": "Instagram Post Template",
+  "post": {
+    "hook": "",
+    "caption": "",
+    "hashtags": [],
+    "image_prompt": "",
+    "character_outfit": "",
+    "character_setting": "",
+    "scheduled_time": "",
+    "platform": "instagram",
+    "post_type": "feed"
+  },
+  "metadata": {
+    "generated_at": "",
+    "approved": false,
+    "approval_notes": "",
+    "published": false,
+    "published_url": ""
+  }
+}

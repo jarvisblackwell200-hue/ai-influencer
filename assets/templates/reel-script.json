@@ -1,0 +1,40 @@
+{
+  "$schema": "Reel/TikTok Script Template",
+  "script": {
+    "title": "",
+    "duration_seconds": 15,
+    "hook": "",
+    "shots": [
+      {
+        "shot_number": 1,
+        "duration": "0-2s",
+        "visual_description": "",
+        "narration": "",
+        "text_overlay": ""
+      },
+      {
+        "shot_number": 2,
+        "duration": "2-10s",
+        "visual_description": "",
+        "narration": "",
+        "text_overlay": ""
+      },
+      {
+        "shot_number": 3,
+        "duration": "10-15s",
+        "visual_description": "",
+        "narration": "",
+        "text_overlay": ""
+      }
+    ],
+    "cta": "",
+    "music_style": "",
+    "hashtags": []
+  },
+  "metadata": {
+    "generated_at": "",
+    "platforms": ["tiktok", "instagram_reels", "youtube_shorts"],
+    "approved": false,
+    "published": false
+  }
+}

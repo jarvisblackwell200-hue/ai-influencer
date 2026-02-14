@@ -1,0 +1,30 @@
+{
+  "brand_colors": {
+    "primary": {
+      "name": "Nordic Blue",
+      "hex": "#2E5090",
+      "usage": "Headlines, CTAs, accent elements"
+    },
+    "secondary": {
+      "name": "Stockholm Stone",
+      "hex": "#E8E4DF",
+      "usage": "Backgrounds, cards, subtle elements"
+    },
+    "accent": {
+      "name": "Aurora Green",
+      "hex": "#4ECDC4",
+      "usage": "Highlights, links, interactive elements"
+    },
+    "text": {
+      "primary": "#1A1A2E",
+      "secondary": "#4A4A5A",
+      "light": "#8A8A9A"
+    },
+    "background": {
+      "light": "#FAFAFA",
+      "warm": "#F5F0EB",
+      "dark": "#1A1A2E"
+    }
+  },
+  "style_notes": "Clean Scandinavian minimalism — light backgrounds, muted tones, occasional pop colors. Avoid oversaturation."
+}

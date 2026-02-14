@@ -1,0 +1,22 @@
+{
+  "$schema": "X/Twitter Thread Template",
+  "thread": {
+    "topic": "",
+    "hook_tweet": "",
+    "tweets": [
+      {
+        "position": 1,
+        "content": "",
+        "media": null
+      }
+    ],
+    "closing_cta": "",
+    "hashtags": []
+  },
+  "metadata": {
+    "generated_at": "",
+    "platform": "x_twitter",
+    "approved": false,
+    "published": false
+  }
+}

@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: ai-influencer-n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      - N8N_DEFAULT_BINARY_DATA_MODE=filesystem
+      - GENERIC_TIMEZONE=Europe/Stockholm
+      - TZ=Europe/Stockholm
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./workflows:/home/node/workflows
+    env_file:
+      - credentials.env
+
+volumes:
+  n8n_data:
+    driver: local
